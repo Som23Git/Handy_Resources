@@ -16,4 +16,8 @@ for i in range(6):
      print(j+1, end="")
    print('')
 
+fruits = ["apple", "banana", "cherry"]
+for x in fruits:
+   print(x)
+
 
