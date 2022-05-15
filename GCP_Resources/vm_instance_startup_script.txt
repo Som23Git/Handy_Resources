@@ -1,0 +1,13 @@
+We can initiate the GCP VM with the below startup script where it would create an environment for us while the VM is created.
+
+------------------------------------
+apt-get update
+apt-get install apache2 php php-mysql -y
+service apache2 restart
+------------------------------------
+
+This above script will update the GCP instance cache which is called as apt-get update
+It will install the apache2 php php-mysql -y -> say yes to everything and storing it as php file
+Once installed, restarting the apache2 to check everything is working appropriately.
+
+//End
