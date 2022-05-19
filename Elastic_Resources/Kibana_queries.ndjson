@@ -1,0 +1,2054 @@
+#BASIC TESTS
+GET /_cluster/health
+GET /_cat/nodes?v
+GET /_cat/nodes?v
+GET /_cat/indices?v&index=reviews
+GET /_cat/shards?v
+
+###########################
+#Created a new index
+GET /newindex1/_doc/101
+
+#We can run scripts to increase or update the values in the document based on the conditions
+POST /newindex1/_update/101
+{
+"script":{
+        "source": """
+        if(ctx._source.in_stock <= 0){
+          ctx.op = "noop";
+          }
+          
+          ctx._source.in_stock -= 1;
+          ctx._source.price +=1;
+          ctx._source.sold +=1;
+          """
+    }
+}
+###########################
+#Testing the doc_id -> because that can be changed manually
+
+GET /newindex1/_doc/asdfghjk
+
+POST /newindex1/_update/asdfghjk
+{
+  "doc":{
+      "source": {
+        "name": "Burgger"
+      }
+  }
+}
+
+GET /newindex1/_search
+{
+  "query":{
+      "match_all":{}
+  }
+}
+
+
+#Search query API with no specific conditions
+GET /newindex1/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#Creating 102 id and checking the _version gets updated
+PUT /newindex1/_doc/102
+{
+  "doc":{
+    "name":"Burger Man123",
+    "DOB": 289789234
+  }
+}
+
+###########################
+
+#Bulk API with action and metadata in the first line and optional parameters in the second line - NDJSON
+
+POST /newindex1/_bulk
+{"index":{"_id":101}}
+{"name": "Burger2.0","building":1234}
+
+###########################
+
+# Analyze API with standard Analyzer
+POST /_analyze/
+{
+  "text": "I think you are so funny :), because you are so hilarious!!! tooo...",
+  "analyzer": "standard"
+}
+
+# Analyze API with Analyzer into 3 building blocks
+POST /_analyze/
+{
+  "text": ["you think you are so funny :), because you are so hilarious!!! tooo..."],
+  "char_filter": [],
+  "tokenizer": "standard",
+  "filter": ["lowercase"]
+}
+
+#Using the keyword analyzer -  "analyzer": "keyword" 
+POST /_analyze/
+{
+  "text": "I think you are so funny :), because you are so hilarious!!! tooo...",
+  "tokenizer": "keyword",
+  "filter": ["lowercase"]
+}
+
+#Not Work due to object
+POST /_analyze/
+{
+  "text": {"tes":"amazing"},
+  "analyzer": "standard"
+}
+
+#Not Work due to object
+POST/reviews/_doc/91
+{
+  "text": [{"name": "Som"},
+    {"name": "kir"},
+    {"name": "Pintu"}]
+}
+
+#Trying to insert an array to see how it got mapped
+PUT /reviews/_doc/90
+{
+  "text": [123,[1,2,3]]
+}
+#
+GET /reviews/_doc/90
+
+###########################
+
+POST /newindex1/_doc/100
+{
+  "objextcreation": {
+      "tes":"amazing",
+      "then":"is"
+    
+  }
+}
+
+#Searching with a range
+GET newindex1/_search
+{
+  "query": {
+    "range": {
+      "created": {
+        "gte": "2007-06-20",
+        "lte": "2000-09-22"
+      }
+    }
+  }
+}
+
+###########################
+
+#Create an API Key for Secure Transmission of Packets within Elastic Search & Metric Beat
+POST /_security/api_key
+{
+  "name": "metricbeat_host001", 
+  "role_descriptors": {
+    "metricbeat_writer": { 
+      "cluster": ["monitor", "read_ilm", "read_pipeline"],
+      "index": [
+        {
+          "names": ["metricbeat-*"],
+          "privileges": ["view_index_metadata", "create_doc"]
+        }
+      ]
+    }
+  }
+}
+
+###########################
+
+#1 - Explicit Mapping to the index "reviews"
+PUT /reviews
+{
+  "mappings": {
+    "properties": {
+      "name":{"type": "text"},
+      "Timestamp": {"type": "date"},
+      "reviewid": {"type": "integer"},
+      "author": {
+        "properties": {
+          "email": {"type": "keyword"},
+          "ratings": {"type": "float"}
+        }
+      }
+    }
+  }
+}
+
+#2 - Adding a document to the index "reviews"
+PUT /reviews/_doc/1
+{
+  "name": "Som",
+  "Timestamp": 567876545,
+  "reviewid": 1,
+  "author": {
+    "email": "som@gmail.com",
+    "ratings": 3.9
+  }
+}
+
+PUT /reviews/_doc/2
+{
+  "name": "Kir",
+  "Timestamp": 5678745,
+  "reviewid": 1,
+  "author": {
+    "email": "kir@gmail.com",
+    "ratings": 4.2
+  }
+}
+
+#3 - Searching the doc from reviews using the keyword email
+GET /reviews/_search
+{
+  "query": {
+    "match_all": { }
+  }
+}
+
+GET /reviews/_search
+{
+  "query": {
+    "match": {
+      "author.email": "kir@gmail.com"
+    }
+  }
+}
+
+#4 - Retrieving the doc directly
+GET /reviews/_doc/2
+
+#5 - Retrieving the mappings of the index "reviews"
+GET /reviews/_mapping
+
+#6 - Adding Fields to the existing indices
+PUT /reviews/_mapping 
+{
+  "properties": {
+      "created at":{"type": "date"}
+    }
+}
+
+###########################
+
+#1 - Coerce Parameter - By default it is enabled so disabling at Index level
+PUT /reviews_coerce/
+{
+  "settings": {
+    "index.mapping.coerce": "false"
+  },
+  "mappings": {
+    "properties": {
+      "name": {"type": "text"},
+      "number": {"type": "float",
+        "coerce": true
+      }
+    }
+  }
+}
+
+#2 - retrieving the mapping of index "reviews_coerce"
+GET /reviews_coerce/_mapping
+
+#3 - Assign the values to the fields or assign documents so the shards will be allocated
+PUT /reviews_coerce/_doc/2
+{
+  "name": "pintu",
+  "number": 123.31
+}
+
+###########################
+
+#1 - Format Parameter - This can be used for dates specifically
+PUT /reviews_date/
+{
+  "mappings": {
+    "properties": {
+      "created_at": {"type": "date",
+        "format": "DD/MM/YYYY"
+      }
+    }
+  }
+}
+
+#2 - retrieving the mapping of index "reviews_coerce"
+GET /reviews_date/_mapping
+
+#3 - input the date
+PUT /reviews_date/_doc/1
+{
+  "created_at": "23/10/1996"
+}
+
+#4 - retrieving the data from the doc - "reviews_date"
+GET reviews_date/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+###########################
+
+#1 - copy_to Parameter - This can be used for dates specifically
+PUT /reviews_copy_to_2/
+{
+  "mappings": {
+    "properties": {
+      "firstname": {"type": "text",
+        "copy_to": "fullname"
+      },
+      "lastname": {"type": "text",
+      "copy_to": "fullname"
+      },
+    "fullname": {"type": "text"}
+    }
+  }
+}
+
+#2 - retrieving the mapping of index "reviews_coerce"
+GET /reviews_copy_to_2/_mapping
+
+#3 - Posting doc
+PUT /reviews_copy_to_2/_doc/1
+{
+  "firstname": "som",
+  "lastname": "M"
+}
+#4 - retrieving the data from the doc - NOTE: the fullname will not be part of the _source object
+GET reviews_copy_to_2/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#5 - get the indexed document directly
+GET reviews_copy_to_2/_doc/1
+
+###########################
+
+#1 - reindexing a doc
+POST  /_reindex
+{
+  "source": {
+    "index": "reviews_copy_to_2"
+  },
+  "dest": {
+    "index": "reviews_copy_reindexed"
+  }
+}
+
+#2 - retrieving the data from the index "reviews_copy_reindexed"
+GET reviews_copy_reindexed/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+###########################
+
+#1 - Using FIELD alias to avoid indexing the field name
+PUT /reviews_copy_to_2/_mapping
+{
+  "properties": 
+  {
+    "name": 
+    {
+      "type":"alias",
+      "path": "firstname"
+    }
+  }
+}
+
+#2 - retrieving the data from the doc from the index "reviews_copy_to_2" with the alias
+GET reviews_copy_to_2/_search
+{
+  "query": {
+    "match": {
+      "name": "som"
+    }
+  }
+}
+
+###########################
+
+#1 - "Multi-field Mapping" for ingredients field using type: text and type: keyword
+#NOTE: These are text queries so these are indexed to inverted indices
+PUT multi_field_map/
+{
+  "mappings": {
+    "properties": {
+      "products": {"type": "text"},
+      "description": {"type": "text"},
+      "ingredients": {"type": "text",
+        "fields": {
+          "items_keyword": {"type": "keyword"}
+        }
+      }
+    }
+  }
+}
+
+#2 - Indexing a doc to the index "multi_field_map"
+PUT /multi_field_map/_doc/1
+{
+  "products": "Boxes",
+  "description": "These are new products for this week",
+  "ingredients": ["Socks", "Shoes", "Trousers"]
+}
+
+PUT /multi_field_map/_doc/2
+{
+  "products": "Boxes",
+  "description": "These are new products for this week",
+  "ingredients": ["Pens", "BT", "CPU"]
+}
+
+#3 - Getting all the data in the index
+GET multi_field_map/_search
+
+#4 - Querying the above method using a query match but using the Text field
+GET multi_field_map/_search
+{
+  "query": {
+    "match": {
+      "ingredients": "Socks"
+    }
+  }
+}
+
+#5 - Querying the above method using a query match but using the Keyword field
+GET multi_field_map/_search
+{
+  "query": {
+    "match": {
+      "ingredients.items_keyword": "Pens"
+    }
+  }
+}
+
+###########################
+
+#1 - "Index Template" creation - NOTE: Index template works when the name of indices falls in the index patterns
+PUT /_template/access_logs
+{
+  "index_patterns": ["access-logs-*"], 
+  "mappings": 
+  {
+    "properties": 
+    {
+      "timestamp": 
+      {"type": "date",
+        "format": "DD/MM/YYYY" 
+      },
+        "product_id": {"type":"integer"}
+    }
+  }
+}
+
+#2 - Create an index with the pattern access-logs-*
+PUT /access-logs-2022-05-15
+
+#3 - Retreive the index to check whether the template had been applied
+GET /access-logs-2022-05-15
+
+###########################
+
+#1 - Explicit & Dynamic Mapping Example
+PUT /exp_dyn_map
+{
+  "mappings": 
+  {
+    "properties": 
+    {
+      "name": {"type": "text"},
+      "@timestamp": {"type": "date",
+        "format": "DD/MM/YYYY"}
+    }
+  }
+}
+
+#2 - Index a document with nick field "nickname": "Som" which was NOT in the Index Mapping
+PUT /exp_dyn_map/_doc/1
+{
+  "name": "Somesh",
+  "nickname": "som",
+  "@timestamp": "23/10/1996"
+}
+
+#3 - Retrieve the doc to check how it got mapped
+GET /exp_dyn_map/_mapping
+
+###########################
+
+#1 - Dynamic Mapping set to False & Strict to check how the system would react NOTE: Mapping will be inherited throughout the key:value pairs of the Indexing document
+PUT /exp_dyn_map_2
+{
+  "mappings": 
+  {
+     "dynamic": false,
+    "properties": 
+    {
+      "name": {"type": "text"},
+      "@timestamp": {"type": "date",
+        "format": "DD/MM/YYYY"}
+    }
+  }
+}
+
+#2 - Index a document with nick field "nickname": "Som" which was NOT in the Index Mapping
+PUT /exp_dyn_map_2/_doc/1
+{
+  "name": "Somesh",
+  "nickname": "som",
+  "@timestamp": "23/10/1996"
+}
+
+#3 - Retrieve the doc to check how it got mapped - You would not see the nickname field getting indexed
+GET /exp_dyn_map_2/_mapping
+
+#4 - Retrieve the doc through directly calling the doc_id
+GET /exp_dyn_map_2/_doc/1
+
+#5 - Retrieve the nickname through Search Query - You will the value as "null"
+GET /exp_dyn_map_2/_search
+{
+  "query": {
+    "match": {
+      "nickname": "Som"
+    }
+  }
+}
+
+#This is a classis example of _source object need NOT have all the values under it to be indexed That is why, the nickname value is seen in the _source but cannot get it through a Search Query.
+
+#We can do the same with date_detection: false/true & numeric_detection: false/true
+
+###########################
+#1 - Testing Dynamic Templates - NOTE: Unlike "_template" for Index mapping, Dynamic do NOT have a keyword as an API. 
+PUT /dyn_template
+{
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "integers": {
+          "match_mapping_type": "long",
+          "mapping": {
+            "type": "integer"
+          }
+        }
+      }
+    ]
+  }
+}
+
+#2 - Indexing a document to the dyn_template index
+POST /dyn_template/_doc/1
+{
+  "product_id": 123
+}
+
+#3 - Retrieve the doc to check how it got mapped
+GET /dyn_template/_doc/1
+
+#4 - Retrieve the mapping now for the index
+GET /dyn_template/_mapping
+
+###########################
+#1 - Creating a custom Analyzer by using the built-in Analyzers. NOTE: We must invoke _settings 
+PUT /analyzer_test_3/
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer":{ 
+        "type": "custom",
+        "char_filter": ["html_strip"],
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "stop",
+          "asciifolding"]
+        }
+      }
+    }
+  }
+}
+
+#2 - Fetch the invoked analyzer settings to see whether it got mapped accordingly
+GET /analyzer_test_3/_settings
+
+#3 - Now, we can test passing the text in the "my_custom_analyzer" analyzer using the _analyze API
+POST /analyzer_test_3/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": "Hello, this <html>This is super cool</html> I love it so <strong>much</strong> açai"
+}
+
+#4 - We'll check the _source object in the doc - We'll NOT get it because the analyze API is to analyze and it will NOT store doc in the index.
+GET /analyzer_test_3/_search
+{
+  "query":{
+    "match_all": {}
+  }
+}
+
+#5 - Now, I want to update the existing index's analyzer, to do that, first I need to close the Index to avoid any querying or searching
+POST /analyzer_test_3/_close
+
+#6 - So, the Index is closed. I can update the Analyzer for the Index "analyzer_test_3"
+PUT /analyzer_test_3/_settings
+{
+  "analysis": {
+    "analyzer": {
+      "my_custom_2_analyzer":{ 
+      "type": "custom",
+      "char_filter": ["html_strip"],
+      "tokenizer": "standard",
+      "filter": [
+        "lowercase",
+        "stop",
+        "asciifolding",
+        "apostrophe"]
+      }
+    }
+  }
+}
+
+#7 - Once the Index's Analyzer had been updated, we can "Open" the index queries
+POST /analyzer_test_3/_open
+
+#8 - Checking whether the filter is working
+POST /analyzer_test_3/_analyze
+{
+  "analyzer": "my_custom_2_analyzer",
+  "text": "Hello, this <html>This is super cool</html> I love it so <strong>much</strong> açai and turkish analyzer \"this is so good\" I can remove these words"
+}
+
+#9 - [Creating a new index to validate the above process of mapppings and settings for Analyzers] -- Update the mapping for the fields in the index "analyzer_test_4"
+POST /analyzer_test_4/_close
+PUT /analyzer_test_4/_settings
+{
+  "analysis": {
+    "analyzer": {
+      "my_custom_2_analyzer":{ 
+      "type": "custom",
+      "char_filter": ["html_strip"],
+      "tokenizer": "standard",
+      "filter": [
+        "lowercase",
+        "stop",
+        "asciifolding",
+        "apostrophe"]
+      }
+    }
+  }
+}
+POST /analyzer_test_4/_open
+
+PUT /analyzer_test_4/_mapping
+{
+  "properties": {
+    "name": {"type": "text"},
+    "gender": {"type": "text"},
+    "desc": {"type": "text",
+      "analyzer": "my_custom_2_analyzer"
+    }
+  }
+}
+
+#10 - Indexing a document to the index "analyzer_test_3" so it can be used for Full-text queries later
+PUT /analyzer_test_4/_doc/1
+{
+  "name": "Som",
+  "gender": "Male",
+  "text": "Hello, <jhtml>I'm Som</html> and I'm working<strong/> on new technologies"
+}
+
+###########################
+
+#Search Queries -> Query DSL method & Query Param Method similar to usual API without specifying in the Body
+
+POST /reviews/_search?q=name:som OR ratings >= 4
+POST /reviews/_search?q=name:som AND ratings >= 4
+
+#Created a range search query for Author Ratings
+POST reviews/_search
+{
+  "query": {
+    "range":{
+      "author.ratings": {
+        "gte": 4
+      }
+    }
+  }
+}
+
+#Searching the same document using explain property so that it tells us about how it calculated using tf(term frequency), boost, idf(inverted document frequency) -> Clearly, there is no boost from our end but can be done using curations/relevance tuning. We can use these parameters to find the RELEVANCE SCORING!!
+POST reviews/_search
+{
+  "explain": true, 
+  "query": {
+    "match": {
+      "name": "Som"
+    }
+}
+}
+
+#"No Matching Term" and using an Explain API, we can see whether there are any values for the same
+POST reviews/_explain/1
+{
+  "query": {
+    "match": {
+      "name": "Tru"
+    }
+}
+}
+
+###########################
+
+#Term-level queries Vs full-text queries
+#1 - Searching the exact values using the Term Queries
+POST reviews/_search
+{
+  "query": {
+    "term": {
+      "author.email": "som@gmail.com"
+    }
+  }
+}
+
+#2 - Searching the values using the Term Queries - But, this time using the lowercase "name value: "som"
+POST reviews/_search
+{
+"query": {
+  "term": {
+    "author.email": {
+      "value": "Som@gmail.com"
+    }
+  }
+  }
+}
+
+#3 - Searching the same value with the incorrect capitalization of the email using the MATCH param or you can call it as Full-Text Queries, NOTE: author.email is mapped to a keyword field.
+POST reviews/_search
+{
+"query": {
+  "match": {
+    "author.email":"som@gmail.com"  
+    }
+  }
+}
+
+#4 - Using terms to find muliple values within the index
+GET reviews/_search
+{
+"query": {
+  "terms": {
+    "name": [
+      "som",
+      "kir",
+      "pintu"
+    ]
+  }
+}
+}
+
+#5 - Get the mapping for an understanding - If there are no analyzers in the response, then it should be Standard Analyzer that will lowercase all the indexed documents
+GET reviews/_mapping
+
+#6 - Now, we know that the analyzer_test_4 got an analyzer under text field
+GET analyzer_test_4/_mapping
+
+#7 - Retrieve the value of the Analyzer or an understanding of the Analyzer would have worked for the specific text field
+GET analyzer_test_4/_analyze
+{
+  "explain": true, 
+  "text": "Hello, this is Som from India",
+  "analyzer": "my_custom_2_analyzer"
+}
+
+#HOW to get the settings of an Analyzer???? --> It is done through EXPLAIN API
+
+
+###########################
+
+#Retriving Documents using "ids" directly in the Search Query
+GET /reviews/_search
+{
+  "query": {
+    "ids": {
+      "values": [1,2,3,4,5]
+    }
+  }
+}
+
+###########################
+
+##### --- TERM-LEVEL Queries --- #####
+
+#Using the range query to get values within the specific range - Let me take an example from "newindex1"
+
+#1 - Let's Search all and get an idea about the values in the document
+GET newindex1/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#2 - Using range query, let's get the products that got "in_stock", less than "20" quantity
+GET newindex1/_search
+{
+  "query": {
+    "range": {
+      "in_stock": {
+        "gte": 10,
+        "lte": 20
+      }
+    }
+  }
+}
+
+###########################
+
+#fetch the fields that got Non-Null Values using "exists" query i.e. fetch fields where the tags value is NOT zero or empty
+GET /newindex1/_search
+{
+  "query": {
+    "exists": {
+      "field": "tags"
+    }
+  }
+}
+
+###########################
+
+#fetch the values using the prefix query i.e. fetch documents where the prefix starts with "wine"
+GET /newindex1/_search
+{
+  "query": {
+    "prefix": {
+      "name": "wine"
+    }
+  }
+}
+
+###########################
+
+#fetch the values using the wildcard queries i.e. fetch documents where the name contains "wi*" or -- "wi?"
+GET /newindex1/_search
+{
+  "query": {
+    "wildcard": {
+      "name": "wi*"
+    }
+  }
+}
+
+#fetch the values using the "Regular Expression" queries i.e. fetch documents where the name contains the lowercase and uppercase alphabets.
+GET /newindex1/_search
+{
+  "query": {
+    "regexp": {
+      "name": "wi[a-zA-Z]+"
+    }
+  }
+} 
+
+#####################################################################################################
+#Questions for Term Search Queries
+#Write a query matching products that didn’t sell very well, being products where the “sold” field has a value of less than 10 (sold < 10).
+GET /newindex1/_search
+{
+  "query": {
+    "range": {
+      "sold": {
+        "lt": 10
+      }
+    }
+  }
+}
+
+#Write a query that matches products that sold okay, meaning less than 30 and greater than or equal to 10 (sold < 30 && sold >= 10).
+GET /newindex1/_search
+{
+  "query": {
+    "range": {
+      "sold": {
+        "lt": 30,
+        "gte": 10
+      }
+    }
+  }
+}
+
+#Write a query that matches documents containing the term “Meat” within the “tags” field.
+GET /newindex1/_search
+{
+  "query": {
+    "match": {
+      "tags.keyword": "Meat"
+    }
+  }
+}
+
+#Write a query matching documents containing one of the terms "Tomato" and "Paste" within the "name" field.
+GET /newindex1/_search
+{
+  "query": {
+    "terms": {
+      "name": [
+        "tomato",
+        "paste",
+        "wine"
+    ]
+  }
+  }
+}
+
+#Write a query that matches products with a "name" field including “pasta”, “paste”, or similar. The query should be dynamic and not use the "terms" query clause.
+GET /newindex1/_search
+{
+  "query": {
+    "regexp": {
+      "name": "past[a-zA-Z]+"
+  }
+  }
+}
+
+#Write a query that matches products that contain a number within their "name" field.
+GET /newindex1/_search
+{
+  "query": {
+    "regexp": {
+      "name": "[0-9]+"
+  }
+  }
+}
+#####################################################################################################
+###########################
+#Writing Query for Full-Text Queries -> query operator, match_phrase, and multi-fields
+#NOTE: By default, the operator for the Full Text Queries is OR
+GET /newindex1/_search
+{
+  "query": {
+    "match": {
+     "description": "Mauris viverra diam vitae quam"
+  }
+  }
+}
+
+#The above match query can also be written as below with specific the OR operator
+GET newindex1/_search
+{
+  "query": {
+    "match": {
+      "description": {
+        "query": "Mauris viverra diam vitae quam",
+        "operator": "or"
+      }
+    }
+  }
+}
+
+#Changing the operator to AND for the match query
+GET /newindex1/_search
+{
+  "query": {
+    "match": {
+        "description": {
+          "query": "Mauris viverra diam vitae quam",
+          "operator": "AND"
+      }
+  }
+  }
+}
+
+#MATCHING PHRASES - Using the exact order of the text
+GET /newindex1/_search
+{
+  "query": {
+    "match_phrase": {
+      "description": "Mauris viverra"
+    }
+  }
+}
+
+#MATCHING PHRASES - Using the NOT an exact order of the text NOTE: You'll get a NULL in this scenario Because Matching Phrases Should always be in Order.
+GET /newindex1/_search
+{
+  "query": {
+    "match_phrase": {
+      "description": "viverra Mauris"
+    }
+  }
+}
+
+#MULTI-FIELD SEARCHING - we can Search for a text or phrase with multi-fields so it'll search with the same OR operator as usual Match queries
+GET /newindex1/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "wine Ice white",
+      "fields": ["name","description"]
+    }
+  }
+}
+
+###########################
+#####################################################################################################
+
+#Questions for this full-text query search
+#Write a query searching for the sentence "pasta with parmesan and spinach" within the "title" field, simulating that this sentence was entered by a user within a search field.
+GET /{indexName}/_search
+{
+  "query": {
+    "match": {
+      "title": "pasta with parmesan and spinach"
+    }
+  }
+}
+
+#Write a query searching for phrase "pasta carbonara" within the "title" field.
+GET /{indexName}/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "pasta carbonara"
+    }
+  }
+}
+
+#Write a query searching for the terms "pasta" or "pesto" within the "title" and "description" fields
+GET /{indexName}/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "pasta pesto",
+      "fields": ["title","description"]
+    }
+  }
+}
+
+#####################################################################################################
+########################### Bool Query -> Compound Queries
+#Bool Query for must, should, filter -> NOTE: The bool Query Context affect the Relevance Score directly but NOT the filter Context, to visualize let's try both.
+GET /newindex1/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"name": "Wine Red Pepper"}}
+      ],
+      "should": [
+        {"match": {"name": "Ice"}}
+      ],
+      "must_not": [
+        {"match": {"name": "White"}}
+      ], 
+      "filter": [
+        {"range": {
+          "in_stock": {
+            "gte": 10,
+            "lte": 20
+          }
+        }}
+      ]
+    }
+  }
+}
+
+#The Relevance Scoring will change before we remove the filter context from the bool query and it will add the weights for the same. Also, the filter Context have much more throughput, because it does not have to calculate the relevance scoring and just need to pass the values.
+GET /newindex1/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"name": "Wine Red Pepper"}},
+          {"range": {"in_stock": {
+            "gte": 10,
+            "lte": 20
+          }
+        }
+      }
+      ],
+      "should": [
+        {"match": {"name": "Ice"}}
+      ],
+      "must_not": [
+        {"match": {"name": "White"}}
+      ]
+    }
+  }
+}
+
+#Similar to EXPLAIN API, we can use "_name" queries for bool queries to understand how the values are computed.
+
+#1 - Below is the usual query, let us write a query with the _name below. 
+GET /newindex1/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"name": "Wine Red Pepper"}}
+      ],
+      "should": [
+        {"match": {"name": "Ice"}}
+      ],
+      "must_not": [
+        {"match": {"name": "White"}}
+      ], 
+      "filter": [
+        {"range": {
+          "in_stock": {
+            "gte": 10,
+            "lte": 20
+          }
+        }}
+      ]
+    }
+  }
+}
+
+#2 - _name query NOTE: the _name query should be within an object of the field, we would need to change the field query from "name": "wine" to -> "name": { "query":"wine","_name":"wine_query"}
+GET /newindex1/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"name": {
+          "query": "Wine Red Pepper",
+          "_name": "Wine Red Pepper_must_name_query"
+        }}}
+      ],
+      "should": [
+        {"match": {"name": {
+          "query": "Ice",
+          "_name": "Ice_should_name_query"
+        }}}
+      ],
+      "must_not": [
+        {"match": {"name": {
+          "query": "White",
+          "_name": "White_must_not_name_query"
+        }}}
+      ], 
+      "filter": [
+        {"range": {
+          "in_stock": {
+            "gte": 10,
+            "lte": 20,
+            "_name": "instock_filter_query"
+          }
+        }}
+      ]
+    }
+  }
+}
+
+
+########################### JOINING QUERIES - Relationship like Foreign Key #########################
+#Fetched the doc and data from a Github Repo -> codingexplained
+#1 - Creating a department index with the mappings
+PUT /department
+{
+  "mappings": {  
+    "properties": {
+      "name": {"type": "text"},
+      "employees": {"type": "nested"}
+    }
+  }
+}
+
+#2.1 - Indexing the document_1 with a set of Employee Values with the department in association
+PUT /department/_doc/1
+{
+  "name": "Development",
+  "employees": [
+    {
+      "name": "Eric Green",
+      "age": 39,
+      "gender": "M",
+      "position": "Big Data Specialist"
+    },
+    {
+      "name": "James Taylor",
+      "age": 27,
+      "gender": "M",
+      "position": "Software Developer"
+    },
+    {
+      "name": "Gary Jenkins",
+      "age": 21,
+      "gender": "M",
+      "position": "Intern"
+    },
+    {
+      "name": "Julie Powell",
+      "age": 26,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Benjamin Smith",
+      "age": 46,
+      "gender": "M",
+      "position": "Senior Software Engineer"
+    }
+  ]
+}
+
+#2.2 - Indexing the document_2 with a set of Employee Values with the department in association
+PUT /department/_doc/2
+{
+  "name": "HR & Marketing",
+  "employees": [
+    {
+      "name": "Patricia Lewis",
+      "age": 42,
+      "gender": "F",
+      "position": "Senior Marketing Manager"
+    },
+    {
+      "name": "Maria Anderson",
+      "age": 56,
+      "gender": "F",
+      "position": "Head of HR"
+    },
+    {
+      "name": "Margaret Harris",
+      "age": 19,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Ryan Nelson",
+      "age": 31,
+      "gender": "M",
+      "position": "Marketing Manager"
+    },
+    {
+      "name": "Kathy Williams",
+      "age": 49,
+      "gender": "F",
+      "position": "Senior Marketing Manager"
+    },
+    {
+      "name": "Jacqueline Hill",
+      "age": 28,
+      "gender": "F",
+      "position": "Junior Marketing Manager"
+    },
+    {
+      "name": "Donald Morris",
+      "age": 39,
+      "gender": "M",
+      "position": "SEO Specialist"
+    },
+    {
+      "name": "Evelyn Henderson",
+      "age": 24,
+      "gender": "F",
+      "position": "Intern"
+    },
+    {
+      "name": "Earl Moore",
+      "age": 21,
+      "gender": "M",
+      "position": "Junior SEO Specialist"
+    },
+    {
+      "name": "Phillip Sanchez",
+      "age": 35,
+      "gender": "M",
+      "position": "SEM Specialist"
+    }
+  ]
+}
+
+#3. Searching the values within a Nested object, should use Nested Query in start
+GET /department/_search
+{
+  "query": {
+    "nested": {
+      "path": "employees",
+      "query": {
+        "bool": {
+          "must": [
+            {
+              "match": {
+                "employees.position": {"query": "intern", 
+                  "_name": "intern_query_must"
+                }
+              }
+            },
+            {
+              "term": {
+                "employees.gender.keyword": {
+                  "value": "F",
+                  "_name": "gender_query_must"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+#INFERENCE - _name queries DOES NOT WORK for Nested type instead it works for only Bool
+
+##################################################
+
+#Controlling Search Query Results
+
+#1 - Using Yaml format
+GET /newindex1/_search?format=yaml
+{
+  "query": {
+    "match": {
+      "name": "wine"
+    }
+  }
+}
+
+#2.1 - Using _source filering, we can retrieve only the specific fields
+GET /newindex1/_search
+{
+  "_source": ["name","price"],
+  "query": {
+    "match": {
+      "name": "wine"
+    }
+  }
+}
+
+#2.2 - instead of the above, we can use includes and excludes too
+GET /newindex1/_search
+{
+  "_source": {
+    "includes": "*",
+    "excludes": ["tags","description"]
+  },
+  "query": {
+    "match": {
+      "name": "wine"
+    }
+  }
+}
+
+#3 - Result Size - We can change the result that we get as a response
+GET /newindex1/_search?size=2
+{
+  "query": {
+    "match": {
+      "name": "wine"
+    }
+  }
+}
+
+#4 - Using offset i.e. "from" and using Limit i.e. "size" - we can also specify the same in request Body as size: 2 and from:0
+GET /newindex1/_search?size=2&from=0
+{
+  "query": {
+    "match": {
+      "name": "wine"
+    }
+  }
+}
+
+#5 - Using Filter context, we can be sure, if the fields do NOT need relevance score so it improves performance.
+
+##################################################
+#In Aggregations -> There are Metric, Terms "Bucket" Aggregations, & Nested Aggs.
+#1 - AGGREGATIONS - "Orders" Index Mapping
+PUT /orders
+{
+  "mappings": {
+    "properties": {
+      "purchased_at": {
+        "type": "date"
+      },
+      "lines": {
+        "type": "nested",
+        "properties": {
+          "product_id": {
+            "type": "integer"
+          },
+          "amount": {
+            "type": "double"
+          },
+          "quantity": {
+            "type": "short"
+          }
+        }
+      },
+      "total_amount": {
+        "type": "double"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "sales_channel": {
+        "type": "keyword"
+      },
+      "salesman": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "text"
+          }
+        }
+      }
+    }
+  }
+}
+
+#2 - Bulk imported the dataset for orders, now checking whether we got the data in here.
+GET /orders/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#3.1 - Sum the  total_amount of sales
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_sales_orders": {
+      "sum": {
+        "field": "total_amount"
+      }
+    }
+  }
+}
+
+#3.2 - Avg the  total_amount of sales
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "Avg_sales_orders": {
+      "avg": {
+        "field": "total_amount"
+      }
+    }
+  }
+}
+
+#3.3 - min & max the  total_amount of sales by nesting the aggregations
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "min_sales": {
+      "min": {
+        "field": "total_amount"
+      }
+    },
+    "max_sales" : {
+      "max": {
+        "field": "total_amount"
+      }
+    }
+  }
+}
+
+#3.4 - Cardinality - It provides an approximate numbers as result with a trade off for performance - We can check the number of salesman.id
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "salesman_numbers": {
+      "cardinality": {
+        "field": "salesman.id"
+      }
+    }
+  }
+}
+
+#To check the maximum id of a salesman
+GET /orders/_search
+{
+  "_source": {
+    "includes": "salesman.id"
+  },
+  "query": {
+    "match_all": {}
+  },
+  "sort": [
+    {
+      "salesman.id": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+#Successfully, the cardinality value is right. We could used the "max"- agg type to check the last value of the salesman.id too.
+
+#3.5 - Count the number of values
+GET /orders/_search
+{
+  "explain": true, 
+  "size": 0,
+  "aggs": {
+    "total_sale_count": {
+      "value_count": {
+        "field": "total_amount"
+      }
+    }
+  }
+}
+
+#3.6 - We can get all the above using the "stats" aggs type except the cardinality.
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "total-stats": {
+      "stats": {
+        "field": "total_amount"
+      }
+    }
+  }
+}
+
+##################################################
+
+#1 - Bucket Aggregations for status.keyword field
+GET /orders/_search
+{
+  "size": 1, 
+  "query": {
+    "match_all": {}
+  }
+}
+
+#2 - Let's create buckets for different statuses of the order - NOTE: we should use "terms" for creating a bucket for exact statuses, also additionally use a param called "Missing" to put all documents that do NOT have the status values.
+GET orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "bucket-aggs-status": {
+      "terms": {
+        "field": "status",
+        "missing": "N/A",
+        "min_doc_count": 0,
+        "order": {
+          "_key": "asc"
+        }
+      }
+    }
+  }
+}
+
+#3 - Use the Bucket Aggregations i.e. also called as Term Aggregations -> We can use this to nest metric aggregations
+#3.1 - Creating a Bucket Aggregation first to understand
+GET /orders/_search
+{
+  "size": 0, 
+  "aggs": {
+    "bucket-aggs-status": {
+      "terms": {
+        "field": "status",
+        "missing": "N/A",
+        "min_doc_count": 0
+      }
+    }
+  }
+}
+
+#3.2 - Creating Nested Aggregations with Metric Aggs and range query.
+GET orders/_search
+{
+  "size": 0, 
+  "query": {
+      "range":{"total_amount": {
+        "gte": 100
+       }
+      }
+    },
+    "aggs": {
+      "total-bucket-count": {
+        "terms": {
+          "field": "status",
+          "missing": "N/A",
+          "min_doc_count": 0
+        },
+        "aggs": {
+        "stats-status":{
+        "stats":{
+        "field": "total_amount"
+          }
+        }
+      }
+    }
+  }
+}
+
+#3.3 - Filtering out document using filter context and running the aggs on the same.
+GET /orders/_search
+{
+  "size": 0, 
+  "aggs": {
+    "total-values-lessthan": {
+      "filter": {
+        "range": {
+          "total_amount": {
+            "lt": 20
+          }
+        }
+      },
+      "aggs": {
+        "avg-total-amount": {
+          "sum": {
+            "field": "total_amount"
+          }
+        }
+      }
+    }
+  }
+}
+
+#3.4 - Using Range Aggregations and NOT as a range query in the filter context.
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "Getting-Range": {
+      "range": {
+        "keyed": true, 
+        "field": "total_amount",
+        "ranges": [
+          {
+            "from": 0,
+            "to": 49,
+            "key": "The low selling stocks"
+          },
+          {
+            "from": 50,
+            "to": 100,
+            "key": "The medium selling stocks"
+          },
+          {
+            "from": 100,
+            "key": "The high selling stocks"
+          }
+        ]
+      }
+    }
+  }
+}
+
+#Inference - If you are NOT using the keyed: true and providing the key -> it will take the range as the key name by default.
+
+#3.5 - Using the same Range Aggregations for dates
+GET /orders/_search
+{
+  "size": 0,
+  "aggs": {
+    "Getting-Range": {
+      "date_range": {
+        "keyed": true, 
+        "field": "purchased_at",
+        "format": "yyyy-MM-dd", 
+        "ranges": [
+          {
+            "from": "2016-01-01",
+            "to": "2016-01-01||+3M",
+            "key": "The first quarter"
+          },
+          {
+            "from": "2016-01-01||+3M",
+            "to": "2016-01-01||+6M",
+            "key": "The second quarter"
+          },
+          {
+            "from": "2016-01-01||+6M",
+            "key": "The rest of the year"
+          }
+        ]
+      },
+      "aggs": {
+        "Stats-Total-Amount": {
+          "stats": {
+            "field": "total_amount"
+          }
+        }
+      }
+    }
+  }
+}
+
+#3.6.1 Basic Histogram Aggregations
+GET /orders/_search
+{
+  "size": 0, 
+  "aggs": {
+    "creating-histogram": {
+      "histogram": {
+        "field": "total_amount",
+        "interval": 25
+      }
+    }
+  }
+}
+
+#3.6.2 Adding Range Query and then creating an Histogram on the same
+GET /orders/_search
+{
+  "size": 0, 
+  "query": {
+    "range": {
+      "total_amount": {
+        "gte": 100
+      }
+    }
+  }, 
+  "aggs": {
+    "creating-histogram": {
+      "histogram": {
+        "field": "total_amount",
+        "interval": 25
+      }
+    }
+  }
+}
+
+#3.6.3 We can use the same above query to calculate date_histogram
+GET /orders/_search
+{
+  "size": 0, 
+  "aggs": {
+    "creating-date-histogram": {
+      "date_histogram": {
+        "format": "yyyy-MM-dd", 
+        "field": "purchased_at",
+        "calendar_interval": "month"
+      }
+    }
+  }
+}
+
+#HIGHLIGHT ERROR/FIX: The auto-complete is incorrect for Date Histogram where it throws interval key instead of the calendar interval.
+
+##################################################
+
+#Improving Search Results using Slop i.e. Proximity within the match phrase
+GET /newindex1/_search
+{
+  "_source": ["description"], 
+  "query": {
+    "match_phrase": {
+     "description": {
+        "query": "Mauris viverra",
+        "slop": 1 
+     }
+    }
+  }
+}
+
+#Boosting the relevance scores using the Proximity and joining it with the bool query -> Must and Should. NOTE: The should consist of the Proximity that directly affects the relevance scores.
+GET /newindex1/_search
+{
+  "_source": ["description"], 
+  "query": {
+    "bool": {
+      "must": [
+        {"match_phrase": {
+          "description": {
+            "query": "Mauris viverra"
+            }
+          }
+        }
+      ],
+      "should": [
+        {"match_phrase": {
+          "description": {
+            "query": "Mauris viverra",
+            "slop": 1
+          }
+        }}
+      ]
+    }
+  }
+}
+
+##################################################
+
+#1 - Fuzzy Query vs Match Query -> NOTE: Fuzzy query is a term-level query
+#1 - Querying explicitly with operator AND for the match query
+GET /newindex1/_search
+{
+  "query": {
+    "match": {
+      "description": {"query": "Mauris viverra",
+      "operator": "and"}
+    }
+  }
+}
+
+#2.1 - Writing Basic Fuzzy Query with the above scenario
+GET /newindex1/_search
+{
+  "_source": ["description"], 
+  "query": {
+    "match": {
+      "description": {"query": "M0uris v0verra",
+        "operator": "and", 
+        "fuzziness": 1
+      }
+    }
+  }
+}
+
+#2.2 - Now, instead of using fuzzy as a parameter in the match query, using the fuzzy query as a whole
+GET /newindex1/_search
+{
+  "_source": ["description"], 
+  "query": {
+    "fuzzy": {
+      "description": "Mauris"  
+    }
+  }
+}
+
+#INFERENCE - It is always best to use fuzzy query with the Match Query instead using the Fuzzy Query as a whole because it is a term level query and looks for exact matches and DOES NOT go through analyzer.
+
+##################################################
+#1. SYNONYMS - Working on Synonyms to control the search queries
+PUT /synonyms_index/
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "synonym-test": {
+          "type": "synonym", 
+          "synonyms": [
+            "awful => terrible",
+            "awesome => great, super",
+            "elasticsearch, logstash, kibana => elk",
+            "weird, strange"
+          ]
+        }
+      },
+      "analyzer": {
+        "my-analyzer": {
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "synonym-test"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "description": {
+        "type": "text",
+        "analyzer": "my-analyzer"
+      }
+    }
+  }
+}
+
+#2.1 - Now, testing the same using the ANALYZE API to see whether it got mapped correctly
+POST /synonyms_index/_analyze
+{
+  "analyzer": "my-analyzer",
+  "text": "awesome"
+}
+
+#2.2 - Now, testing the same with Elasticsearch
+POST /synonyms_index/_analyze
+{
+  "analyzer": "my-analyzer",
+  "text": "Elasticsearch"
+}
+
+#2.3 - Now, let's add all the above queries into ONE
+POST /synonyms_index/_analyze
+{
+  "analyzer": "my-analyzer",
+  "text": "Elasticsearch is awesome platform and great plaform"
+}
+
+#3.1 - Let's add a document and try the same with the search
+POST /synonyms_index/_doc
+{
+  "description": "Elasticsearch is awesome, but can also seem weird sometimes."
+}
+
+
+
+#3.2 - Fetching the description with the search query, replace awesome, super, elasticsearch
+GET /synonyms_index/_search
+{
+  "query": {
+    "match": {
+      "description": "super"
+    }
+  }
+}
+
+#4.1 - Uploaded the file using the cURL
+PUT /synonyms_index_upload/
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "synonym_test": {
+          "type": "synonym",
+          "synonyms_path": "/Users/someshwaran.mohankumar/Downloads/elastic-stack/elasticsearch-8.2.0/config/analysis/synonyms.txt"
+        }
+      },
+      "analyzer": {
+        "my_analyzer": {
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "synonym_test"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "description": {
+        "type": "text",
+        "analyzer": "my_analyzer"
+      }
+    }
+  }
+}
+
+#4.2 - Checking the Synonyms had been uploaded correctly
+POST /synonyms_index_upload/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text": "Elasticsearch,logstash,beats,x-pack,xpack,kibana"
+}
+
+#5 - Highlighting the text that was found - Fetching the description with the search query, replace awesome, super, elasticsearch but, now additionally highlight.
+GET /synonyms_index/_search
+{
+  "query": {
+    "match": {
+      "description": "super"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "description": {}
+    }
+  }
+}
+
+##################################################
+PUT /stemming_index/
+{ 
+  "settings": {
+    "analysis":{
+      "filter": {
+        "synonym-test":{
+          "type": "synonym",
+          "synonyms": [
+            "som => somesh, someshwaran",
+            "pintu => pet,dog,golden retriever"
+            ]},
+            "stemming-test":{
+              "type": "stemmer",
+              "name": "english"
+            }
+        },
+        "analyzer": {
+          "my-analyzer": {
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "synonym-test",
+              "stemming-test"
+              ]
+          }
+        }
+      }
+    },
+  "mappings": {
+    "properties": {
+      "description": {
+        "type": "text",
+        "analyzer": "my-analyzer"
+      }
+    }
+  }
+}
+
+#Add a few checks
+POST /stemming_index/_analyze
+{
+  "explain": true, 
+  "text": "Hello, this is Som from India and working as a programming assistance while living with Pintu",
+  "analyzer": "my-analyzer"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
