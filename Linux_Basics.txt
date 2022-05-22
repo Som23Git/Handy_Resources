@@ -1,0 +1,160 @@
+#1 How to check Kernel Version of Linux OS?
+
+CMD - uname -a
+Example OP: Linux ip-172-31-18-203 5.15.0-1005-aws #7-Ubuntu SMP Wed Apr 20 03:44:13 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+Where, "5.15.0" is the Kernel version.
+
+#2 How to check IP address of server?
+
+1. CMD - ifconfig
+Example OP: 
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 9001
+        inet 172.31.18.203  netmask 255.255.240.0  broadcast 1X2.31.31.XXX
+        inet6 feX0::8c0:1eff:fe07:c0d7  prefixlen 64  scopeid 0x20<link>
+        ether 0a:c0:1e:07:c0:d7  txqueuelen 1000  (Ethernet)
+        RX packets 1641  bytes 409976 (409.9 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 1711  bytes 176705 (176.7 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+Where, "inet 172.31.18.203" is the IP address of the server.
+
+2. CMD - hostname -I
+Exmaple OP: 
+172.31.18.203
+
+3. CMD - ip r
+Example OP:
+default via 172.31.16.1 dev eth0 proto dhcp src 172.31.18.203 metric 100
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
+172.31.0.2 via 172.31.16.1 dev eth0 proto dhcp src 172.31.18.203 metric 100
+172.31.16.0/20 dev eth0 proto kernel scope link src 172.31.18.203 metric 100
+172.31.16.1 dev eth0 proto dhcp scope link src 172.31.18.203 metric 100
+
+Where, "172.31.18.203" is the Source IP,i.e. ME.
+
+#3 How to check default gateway of server?
+
+CMD - route -vn
+Example OP: 172.31.16.1
+
+#4 What is ulimit? - How many files can be opened?
+
+CMD - ulimit
+Example OP: unlimited
+
+#5 Disk space is still full even after deleting a file of 5GB?
+
+CMD - 
+
+Step 1- df -Th -> check the available space and used space in the Filesystem
+step 2- Find the deleted files using "lsof | grep deleted"
+
+Example OP:
+Step 1
+Filesystem     Type   Size  Used Avail Use% Mounted on
+/dev/root      ext4   7.6G  6.6G 1018M  87% /
+tmpfs          tmpfs  484M     0  484M   0% /dev/shm
+tmpfs          tmpfs  194M  1.3M  193M   1% /run
+tmpfs          tmpfs  5.0M     0  5.0M   0% /run/lock
+/dev/xvda15    vfat   105M  5.3M  100M   5% /boot/efi
+tmpfs          tmpfs   97M   76K   97M   1% /run/user/116
+tmpfs          tmpfs   97M   76K   97M   1% /run/user/1000
+
+Step 2
+pipewire  1462  ubuntu   25u REG 0,1 2312 21 /memfd:pipewire-memfd (deleted)
+
+#6 How to ssh to your server?
+
+CMD - ssh -vi "ubuntu_key.pem" ubuntu@ecX-3X-20X-XXX-1.compute-X.amazonaws.com
+Where,
+v -> verbose
+i -> initializing the .pem file.
+
+NOTE: we usually use "chmod 400 ubuntu_key.pem" but, this 400 -> symbolizes to 4 -> Digit place belongs to the Owner(4 is READ), 
+0 -> Digit place belongs to Group Users(0 -> NO Permission) and the last 0 -> Belongs to Others(0 -> NO Permission).
+
+#7 Sudo bash vs sudo su -
+
+It is a simple concept. Sudo bash -> This will NOT change the directory when you login to a root user i.e. if you are in a directory /abc/xyz and commanding it 
+to sudo bash, then you'll continue with the same directory /abc/xyz but from the root user permissions.
+BUT, if you use sudo su -, you will be change to the root permissions and will be starting from the root's HOME directory.
+
+#8 What is use of curl?
+
+It is a Command Line tool to transfer to & fro data to handle HTTP requests.
+
+#9 What is use of wget? 
+
+It will download the source using the command line.
+
+What is use of /etc/hosts entires?
+#10 What is use of W command?
+
+CMD - w
+Example OP:
+ 14:55:36 up 30 min,  1 user,  load average: 0.24, 0.08, 0.39
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+ubuntu   pts/0    49.37.218.58     14:55    0.00s  0.02s  0.00s w
+
+#11 How to kill all process of any user?
+
+CMD - killall -u <specify user name> -> killall -u ubuntu
+We can find the username using the "w" command as mentioned in the previous question.
+
+#12 How to mount disk permanently? 
+
+We can use Fstab to mount disk permanently using the UUID, the path, and the filesystem type as such.
+
+NOTE: Fstab -> File System Table.
+
+Why we do this? In case if we are using SSD for OS installation and wanted to mount the mechanical drive 
+for storage, we can manually update the Fstab file.
+
+#13 How to check hidden files and how to create it?
+
+CMD - ls -A 
+-A -> Will show all the system files i.e. starts with .filename
+
+To Create the same, use 
+CMD - touch .hiddenfilename.txt
+This will .(dot) will make it as a system file and hide it from Normal View.
+
+#14 How to start process at start up time?
+
+https://www.howtogeek.com/687970/how-to-run-a-linux-program-at-startup-with-systemd/
+
+We can use systemd command and create a file using systemctl.
+
+#15 How do you check for free disk space?
+
+CMD - df -Th
+Example OP:
+Filesystem     Type   Size  Used Avail Use% Mounted on
+/dev/root      ext4   7.6G  6.6G 1009M  87% /
+tmpfs          tmpfs  484M     0  484M   0% /dev/shm
+tmpfs          tmpfs  194M  1.5M  193M   1% /run
+tmpfs          tmpfs  5.0M     0  5.0M   0% /run/lock
+/dev/xvda15    vfat   105M  5.3M  100M   5% /boot/efi
+tmpfs          tmpfs   97M   76K   97M   1% /run/user/116
+tmpfs          tmpfs   97M   76K   97M   1% /run/user/1000
+
+The params - Th
+-T -> The file system type
+-h -> Human Readable format
+
+
+How do you manage services on a server?
+How do you check size of a directory or file on your system?
+How do you check open port on Linux Servers?
+How do you check CPU usage for a process?
+How do you deal with mounting partitions?
+How do you find use of a command you don’t know?
+How to check if ACL is set on a file?
+What command do you use to check attribute of a file?
+What would happen if I remove execute permission from a directory?
+I am getting message (No Space Left On Device) and df -Th show 50G free?
+How to check if OS is running on Virtual of Physical Machine?
+How to change owner and Group of a file?
+What is use of NMAP command?
+How to remove an INODE from Linux File system?
