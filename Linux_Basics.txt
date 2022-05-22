@@ -49,6 +49,7 @@ CMD -
 
 Step 1- df -Th -> check the available space and used space in the Filesystem
 step 2- Find the deleted files using "lsof | grep deleted"
+step 3- restart the service
 
 Example OP:
 Step 1
@@ -143,18 +144,112 @@ The params - Th
 -T -> The file system type
 -h -> Human Readable format
 
+#16 How do you manage services on a server?
 
-How do you manage services on a server?
-How do you check size of a directory or file on your system?
-How do you check open port on Linux Servers?
-How do you check CPU usage for a process?
-How do you deal with mounting partitions?
-How do you find use of a command you don’t know?
-How to check if ACL is set on a file?
-What command do you use to check attribute of a file?
-What would happen if I remove execute permission from a directory?
-I am getting message (No Space Left On Device) and df -Th show 50G free?
-How to check if OS is running on Virtual of Physical Machine?
-How to change owner and Group of a file?
-What is use of NMAP command?
-How to remove an INODE from Linux File system?
+CMD 1 - sudo systemctl | grep running
+This will show all the runnning services
+
+CMD 2 - service --status-all
+This will display all the services enabled and disabled status + means enabled, - means disabled.
+
+#17 How do you check size of a directory or file on your system?
+
+CMD 1 - du -h
+This command will display all the file sizes in the current directory.
+
+CMD 2 - du -sh
+This command will display consolidated file size of the current directory
+
+CMD 3 - du -sh or du -h <directory name> 
+This will command will display only the specified directory size.
+
+#18 How do you check open port on Linux Servers?
+
+CMD - sudo lsof -i -P -n | grep LISTEN
+Example OP: 
+ystemd-r  474 systemd-resolve   14u  IPv4  18349      0t0  TCP 127.0.0.53:53 (LISTEN)
+cupsd      576            root    6u  IPv6  20163      0t0  TCP [::1]:631 (LISTEN)
+cupsd      576            root    7u  IPv4  20164      0t0  TCP 127.0.0.1:631 (LISTEN)
+sshd       915            root    3u  IPv4  21466      0t0  TCP *:22 (LISTEN)
+sshd       915            root    4u  IPv6  21477      0t0  TCP *:22 (LISTEN)
+apache2   2613            root    4u  IPv6  37050      0t0  TCP *:80 (LISTEN)
+apache2   2618        www-data    4u  IPv6  37050      0t0  TCP *:80 (LISTEN)
+apache2   2619        www-data    4u  IPv6  37050      0t0  TCP *:80 (LISTEN)
+
+
+#19 How do you check CPU usage for a process?
+
+CMD's - top / atop / htop / pidstat 2
+The last pidstat will display the usage based on a specific process and even the short-lived processes
+can be captured.
+
+#20 How do you find use of a command you don’t know?
+
+We can use "man" command or "--help" command to check the params and the usage of the command.
+
+#21 How to check if ACL is set on a file?
+
+CMD - getfacl <filename>
+This gives the same output as "ls -l" CMD
+
+#22 What command do you use to check attribute of a file?
+
+CMD - lsattr
+
+#23 What would happen if I remove execute permission from a directory?
+
+The directory become inaccessible.
+CMD 1 - chmod a-x <directory name>  and chmod a+x <directory name> 
+CMD 2 - chmod u-x <filename>  and chmod u+x <filename> 
+This command is used to remove the execute permission from a file/directory.
+
+#24 I am getting message (No Space Left On Device) and df -Th show 50G free?
+
+
+#25 How to check if OS is running on Virtual of Physical Machine?
+
+CMD 1 -> hostnamectl
+Example OP: 
+Static hostname: ip-172-XX-XX-2XX
+       Icon name: computer-vm
+         Chassis: vm
+      Machine ID: beed063XXXXXXXXX91e4af8109fc02e7
+         Boot ID: af44f17XXXXXXXXXa6a50a49da3fcaec
+  Virtualization: xen
+Operating System: Ubuntu 22.04 LTS
+          Kernel: Linux 5.15.0-1005-aws
+    Architecture: x86-64
+ Hardware Vendor: Xen
+  Hardware Model: HVM domU
+
+FOR LAPTOP:
+Static hostname: sk
+ Icon name: computer-laptop
+ Chassis: laptop
+ Machine ID: 84e3c8e37e114ac9bc9f69689b49cfaa
+ Boot ID: 19cf3572e1634e778b5d494d9c1af6e9
+ Operating System: Arch Linux
+ Kernel: Linux 4.10.13-1-ARCH
+ Architecture: x86-64
+
+CMD 2 -> sudo dmesg | grep "Hypervisor detected"
+Example OP:
+[    0.000000] Hypervisor detected: Xen HVM
+
+#26 How to change owner and Group of a file?
+
+CMD - sudo chown -c root mpstat.txt 
+Params:
+-c -> Making Changes to root
+Example OP:
+-rw-rw-r-- 1 root ubuntu 37153 May 22 07:56 mpstat.txt
+
+#27 What is use of NMAP command?
+
+nmap - network mapper -> maps all IPs and port in a network.
+
+#28 How to remove an INODE from Linux File system?
+
+Inode -> Index Node - that stores the data of a file like attributes and details.
+CMD - df -i 
+This command will tell us how many Inodes are there in the filesystem.
