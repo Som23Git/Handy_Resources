@@ -1,0 +1,17 @@
+The list of commands that we can use to troubleshoot performance issues in Linux.
+
+1. uptime --> used to check Load averages
+2. dmesg -T | tail --> used to check for Kernel Errors and Kernel messages
+3. vmstat 1 --> Overall stats by time
+4. mpstat -P ALL 1 --> CPU Balance and mp means multiprocessors statistics.
+5. pidstat 1 --> this is very useful to find out all the relevant processes that consuming CPU at large
+6. iostat -xz 1 --> Extended disk i/o processes.
+7.1. free -m --> Tells you the free memory available
+7.2. du -sh --> Tells you the free disk usage available
+7.3. df -sh --> Tells you the free disk free available -h: it is human readable -s: it is summary.
+8.1. sar -n DEV 1 --> Service Activity Report, we can use this for network I/o
+8.2. sar -n TCP, ETCP 1 --> TCP stats
+9.1. top --> Check overview
+9.2. atop --> top can miss a few short-lived processes but atop will NOT.
+9.3. htop --> will give a complete CPU utilization in a horizontal bar graph and looks neat.
+
