@@ -195,6 +195,8 @@ To display the perf.data header info, please use --header/--header-only options.
      0.52%           278  while.sh         bash                     [.] bind_variable
      0.50%           264  while.sh         libc.so.6                [.] 0x000000000019d328
 
+NOTE:  We can use atop or htop to check the short-lived processes.
+
 
 
 
