@@ -120,6 +120,82 @@ there is no utilization so there is NO issues with Network.
 So, Latency of the application can be from the Disks.
 
 
+Scenario's,
+
+2. The application is taking forever
+
+Step 1 -> start with top - This gives you the overview immediately.
+Step 2 -> vmstat 1 - This gives you the swap memory usage.
+Step 3 -> pidstat 1 - This gives you the process that is consuming the maximum memory or CPU.
+Step 4 -> strace -tp `pgrep <process_name>` | head -100 -> taking only the top 100. this will output what it is the process doing.
+
+Step 5 -> If needed, we can kill the process. kill <PID>
+
+Scenario's,
+
+3. Something mysterious is consuming the CPU.
+
+We can follow the same troubleshooting steps as before,
+
+Step 1 -> start with top - This gives you the overview immediately.
+Step 2 -> vmstat 1 - This gives you the swap memory usage.
+Step 3 -> pidstat 1 - This gives you the process that is consuming the maximum memory or CPU.
+Step 4 -> strace -tp `pgrep <process_name>` | head -100 -> taking only the top 100. this will output what it is the process doing.
+
+Step 5 -> If needed, we can kill the process. kill <PID>
+
+BUT, if we were unable to find the process, then we can use a command called, perf record -> It is used to count both the hardware and the software events 
+in the kernel and the system. To keep it simple, it collects data as a whole and DO NOT miss even the short-lived processes.
+
+Step 6 -> perf record, let's record the events for a while like 10 seconds. Then, we can use "perf report -n --stdio" to display the data that it collected.
+
+Example OP:
+To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 53K of event 'cpu-clock:pppH'
+# Event count (approx.): 13307250000
+#
+# Overhead       Samples  Command          Shared Object            Symbol
+# ........  ............  ...............  .......................  ............................
+#
+     7.95%          4234  while.sh         libc.so.6                [.] malloc
+     5.55%          2952  while.sh         bash                     [.] discard_unwind_frame
+     4.96%          2639  while.sh         bash                     [.] hash_search
+     4.84%          2576  while.sh         libc.so.6                [.] cfree
+     3.77%          2006  while.sh         bash                     [.] builtin_address_internal
+     3.57%          1901  while.sh         bash                     [.] execute_command_internal
+     2.46%          1310  while.sh         libc.so.6                [.] _IO_fflush
+     1.90%          1013  while.sh         bash                     [.] unquoted_glob_pattern_p
+     1.87%           995  while.sh         libc.so.6                [.] 0x0000000000198afe
+     1.76%           939  while.sh         libc.so.6                [.] 0x000000000019d981
+     1.34%           714  while.sh         bash                     [.] begin_unwind_frame
+     1.21%           643  while.sh         bash                     [.] dispose_words
+     1.12%           595  while.sh         bash                     [.] execute_command
+     1.08%           573  while.sh         libc.so.6                [.] 0x0000000000198af2
+     0.88%           471  while.sh         bash                     [.] run_pending_traps
+     0.83%           444  while.sh         bash                     [.] copy_word_list
+     0.83%           441  while.sh         bash                     [.] make_bare_word
+     0.81%           432  while.sh         libc.so.6                [.] 0x000000000019d985
+     0.75%           401  while.sh         libc.so.6                [.] 0x00000000000a27bf
+     0.75%           397  while.sh         libc.so.6                [.] 0x000000000019d375
+     0.73%           389  while.sh         libc.so.6                [.] 0x0000000000198b04
+     0.73%           386  while.sh         bash                     [.] dequote_string
+     0.71%           379  while.sh         bash                     [.] do_redirections
+     0.69%           365  while.sh         libc.so.6                [.] 0x000000000019d98d
+     0.68%           361  while.sh         libc.so.6                [.] 0x00000000000a2a80
+     0.63%           334  while.sh         libc.so.6                [.] 0x0000000000198afa
+     0.62%           329  while.sh         libc.so.6                [.] 0x00000000000a2720
+     0.59%           314  while.sh         bash                     [.] set_pipestatus_array
+     0.56%           299  while.sh         bash                     [.] make_word_list
+     0.55%           293  while.sh         libc.so.6                [.] 0x00000000000a273e
+     0.54%           286  while.sh         bash                     [.] alloc_word_desc
+     0.52%           278  while.sh         bash                     [.] bind_variable
+     0.50%           264  while.sh         libc.so.6                [.] 0x000000000019d328
+
+
 
 
 
