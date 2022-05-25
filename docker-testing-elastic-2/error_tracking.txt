@@ -1,0 +1,25 @@
+ closed connection
+ 
+ {"@timestamp":"2022-05-25T04:17:28.051Z", "log.level": "INFO",  "current.health":"YELLOW","message":"Cluster health status changed from [RED] to [YELLOW] (reason: [shards started [[.ds-metricbeat-8.2.0-2022.05.25-000001][0]]]).","previous.health":"RED","reason":"shards started [[.ds-metricbeat-8.2.0-2022.05.25-000001][0]]" , "ecs.version": "1.2.0","service.name":"ES_ECS","event.dataset":"elasticsearch.server","process.thread.name":"elasticsearch[es01][masterService#updateTask][T#1]","log.logger":"org.elasticsearch.cluster.routing.allocation.AllocationService","elasticsearch.cluster.uuid":"CZEfBcRWT0Wq1koUDuCPjw","elasticsearch.node.id":"kTrdR9dDQESTyfTronGGAg","elasticsearch.node.name":"es01","elasticsearch.cluster.name":"docker-cluster"}
+
+
+Tried this within Elastic Search CLI inside Docker.
+curl -X GET "http://127.0.0.1:9200/"
+
+{
+  "name" : "es01",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "CZEfBcRWT0Wq1koUDuCPjw",
+  "version" : {
+    "number" : "8.2.0",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "b174af62e8dd9f4ac4d25875e9381ffe2b9282c5",
+    "build_date" : "2022-04-20T10:35:10.180408517Z",
+    "build_snapshot" : false,
+    "lucene_version" : "9.1.0",
+    "minimum_wire_compatibility_version" : "7.17.0",
+    "minimum_index_compatibility_version" : "7.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
