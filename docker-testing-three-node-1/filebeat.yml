@@ -1,0 +1,109 @@
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+filebeat.config.inputs:
+  enabled: true
+  path: inputs.d/*.yml
+
+
+
+# ======================= Elasticsearch template setting =======================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+# ======================= Filebeat Module settings =======================
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+      var.paths: ["/var/log/system.*"]
+  
+  - module: elasticsearch
+    server:
+    enabled: true
+
+# ======================= Filebeat Input settings =======================
+#https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-configuration-reloading.html#load-input-config
+#https://www.elastic.co/guide/en/beats/filebeat/current/exported-fields-docker-processor.html
+filebeat.inputs:
+  - type: container
+    paths: 
+      - '/var/lib/docker/containers/**/*.log'
+
+#================================ Processors ===================================
+
+# Processors are used to reduce the number of fields in the exported event or to
+# enhance the event with external metadata. This section defines a list of
+# processors that are applied one by one and the first one receives the initial
+# event:
+# processors:
+#   - add_cloud_metadata: ~
+#   - add_docker_metadata: ~
+#   - add_locale: ~
+#   - add_host_metadata: ~
+
+# =============================== HTTP Endpoint ================================
+
+# http.enabled: true
+# http.host: localhost
+# http.port: 6066
+
+#========================== Filebeat autodiscover ==============================
+# See this URL on how to run Apache2 Filebeat module: # https://www.elastic.co/guide/en/beats/filebeat/current/running-on-docker.html
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      # https://www.elastic.co/guide/en/beats/filebeat/current/configuration-autodiscover-hints.html
+      # This URL alos contains instructions on multi-line logs
+      hints.enabled: true
+
+#================================ Processors ===================================
+processors:
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_locale: ~
+  - add_host_metadata: ~
+
+#========================== Elasticsearch output ===============================
+output.elasticsearch:
+  hosts: '${ELASTICSEARCH_HOSTS:es01:9200}'
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+  protocol: "https"
+  ssl.certificate_authorities: "./config/certs/ca/ca.crt"
+
+
+#============================== Dashboards =====================================
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/load-kibana-dashboards.html
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/configuration-dashboards.html
+setup.dashboards:
+  enabled: true
+  #directory: /usr/share/metricbeat/kibana/7/dashboard
+  retry.enabled: true
+  retry.interval: 10s
+  retry.maximum: 100
+
+#============================== Kibana =========================================
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/setup-kibana-endpoint.html
+#https://discuss.elastic.co/t/help-me-in-configure-filebeat-index/305253/21
+#https://discuss.elastic.co/t/cannot-setup-dashboards-filebeat-to-kibana/305115
+# setup.kibana:
+#   host: "http://localhost:5601"
+#   username: ${ELASTICSEARCH_USERNAME}
+#   password: ${ELASTICSEARCH_PASSWORD}
+#host: "172.27.0.6:5601"
+setup.kibana:
+  host: '${KIBANA_HOST:kibana:5601}'
+  protocol: "http"
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+
+
+#============================== Xpack Monitoring ===============================
+xpack.monitoring:
+  enabled: true
+  es01:
+

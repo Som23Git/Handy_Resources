@@ -1,0 +1,130 @@
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+#   # ======================= Elasticsearch template setting =======================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+# processors:
+#   - add_cloud_metadata: ~
+#   - add_docker_metadata: ~
+#   - add_host_metadata: ~
+
+# output.elasticsearch:
+#   hosts: '${ELASTICSEARCH_HOSTS:es01:9200}'
+#   username: '${ELASTICSEARCH_USERNAME:}'
+#   password: '${ELASTICSEARCH_PASSWORD:}'
+#   protocol: "https"
+#   ssl.certificate_authorities: "./config/certs/ca/ca.crt"
+
+  #-------------------------------- Autodiscovery -------------------------------
+# Autodiscover allows you to detect changes in the system and spawn new modules as they happen.
+metricbeat.autodiscover:
+  providers:
+    - type: docker
+      # https://www.elastic.co/guide/en/beats/metricbeat/current/configuration-autodiscover-hints.html
+      hints.enabled: true
+
+metricbeat.modules:
+#------------------------------- System Module -------------------------------
+- module: system
+  metricsets: ["cpu", "load", "memory", "network", "process", "process_summary", "core", "diskio", "socket"]
+  processes: ['.*']
+  process.include_top_n:
+    by_cpu: 5
+    by_memory: 5
+  period: 10s
+  cpu.metrics:  ["percentages"]
+  core.metrics: ["percentages"]
+
+- module: system
+  period: 1m
+  metricsets:
+    - filesystem
+    - fsstat
+  processors:
+  - drop_event.when.regexp:
+      system.filesystem.mount_point: '^/(sys|cgroup|proc|dev|etc|host|lib)($|/)'
+
+- module: system
+  period: 15m
+  metricsets:
+    - uptime
+
+#------------------------------- Docker Module -------------------------------
+- module: docker
+  metricsets: ["container", "cpu", "diskio", "healthcheck", "info", "memory", "network"]
+  hosts: ["unix:///var/run/docker.sock"]
+  period: 10s
+
+#============================== Kibana Module =========================================
+# - module: kibana
+#   metricsets: ["status"]
+#   period: 10s
+#   hosts: ["localhost:5601"]
+#   basepath: ""
+#   enabled: true
+  # protocol: "https"
+  # xpack.enabled: true
+
+  # Set to true to send data collected by module to X-Pack
+  # Monitoring instead of metricbeat-* indices.
+
+#============================== Dashboards =====================================
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/load-kibana-dashboards.html
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/configuration-dashboards.html
+setup.dashboards:
+  enabled: true
+  #directory: /usr/share/metricbeat/kibana/7/dashboard
+  retry.enabled: true
+  retry.interval: 10s
+  retry.maximum: 100
+
+#============================== Kibana =========================================
+#https://www.elastic.co/guide/en/beats/metricbeat/8.2/setup-kibana-endpoint.html
+#https://discuss.elastic.co/t/help-me-in-configure-filebeat-index/305253/21
+#https://discuss.elastic.co/t/cannot-setup-dashboards-filebeat-to-kibana/305115
+# setup.kibana:
+#   host: "http://localhost:5601"
+#   username: ${ELASTICSEARCH_USERNAME}
+#   password: ${ELASTICSEARCH_PASSWORD}
+ #host: "172.27.0.6:5601"
+ #Running beats with the setup command will create the index pattern and load visualizations and machine learning jobs.
+setup.kibana:
+  host: '${KIBANA_HOST:kibana:5601}'
+  protocol: "http"
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+
+  #Nexst action plan - remove all the above details and try configuring.
+
+#============================== Xpack Monitoring ===============================
+xpack.monitoring:
+  enabled: true
+  es01:
+
+#========================== Elasticsearch output ===============================
+output.elasticsearch:
+  hosts: '${ELASTICSEARCH_HOSTS:es01:9200}'
+  username: '${ELASTICSEARCH_USERNAME:}'
+  password: '${ELASTICSEARCH_PASSWORD:}'
+  protocol: "https"
+  ssl.certificate_authorities: "./config/certs/ca/ca.crt"
+
+#================================ Processors ===================================
+processors:
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_locale: ~
+  - add_host_metadata: ~
+
+# =============================== HTTP Endpoint ================================
+
+http.enabled: true
+http.host: localhost
+http.port: 5066
+
+#curl -XGET 'localhost:5066/?pretty' to check whether metricbeat is responding.
